@@ -57,10 +57,11 @@ class DNA:
         return self
 
 class Creature:
-    def __init__(self, dna, position = (0,0)):
+    def __init__(self, dna, world, position = (0,0)):
         self.dna = dna
         self.position = position
         self.food = 0
+        self.world = world.copy()
 
         # DNA Usage
         self.food_sense_distance = self.dna.dna_sequences[0].data[0]
@@ -73,7 +74,7 @@ class Creature:
     # Breeds the child this and the other creature
     # Return new Creature
     def breed(self, other):
-        return Creature( self.dna.crossover(other.dna).mutate() )
+        return Creature( self.dna.crossover(other.dna).mutate(), world )
 
     # DNA Usage
     # Seq 0 = Maximum Distance for sensing food
@@ -81,14 +82,20 @@ class Creature:
     # Seq 2 = General Move Path
 
     # The acts done until it dies
-    def live(self, world, moves):
+    def live(self, moves):
         for i in range(moves):
-            self.act(world)
+            self.act()
         return self.food
 
     # The creature acts upon the world
-    def act(self, world):
-        direction = self._sense_food(world)
+    def act(self):
+        # If already at food, remove it
+        if(self.world.is_food_at(self.position[0], self.position[1])):
+            block = self.world.get_block(self.position[0], self.position[1])
+            block.has_food = False
+            self.food += 1
+
+        direction = self._sense_food()
         if( direction ):
             self._move_food( direction )
         else:
@@ -96,7 +103,7 @@ class Creature:
         return self
 
     # Returns direction in which the food is to find
-    def _sense_food(self, world):
+    def _sense_food(self):
         # TODO: Search square around you
         # For now: Search the cross around you
         
@@ -104,8 +111,7 @@ class Creature:
         
         for distance in range( self.food_sense_distance ):
             for x, y in directions:
-                if world.is_food_at(self.position[0] + x, self.position[1] + y):
-                    self.food += 1
+                if self.world.is_food_at(self.position[0] + x, self.position[1] + y):
                     return (x, y)
         return None
 
@@ -128,17 +134,21 @@ class Block:
         self.has_food = has_food
 
 class World: 
-    def __init__(self, width, height):
+    def __init__(self, width, height, blocks = None):
         self.width = width
         self.height = height
-        self.blocks = []
-        self.random_fill()
+        if (blocks):
+            self.blocks = blocks
+        else:
+            self.blocks = []
+            self.random_fill()
+
 
     def random_fill(self):
       for x in range(self.width):
         self.blocks.append([])
         for y in range(self.height):
-            self.blocks[x].append( Block( random.random() > 0.9 ) )      
+            self.blocks[x].append( Block( random.random() > 0.5 ) )      
 
     def is_food_at(self, x, y):
         block = self.get_block(x, y)
@@ -153,6 +163,14 @@ class World:
         except IndexError:
             return None
 
+    def copy(self):
+        new_blocks = []
+        for x in range(self.width):
+            new_blocks.append([])
+            for y in range(self.height):
+                new_blocks[x].append( self.blocks[x][y] )
+        return World(self.width, self.height, new_blocks)
+
 class Generation:
     def __init__(self, size, creatures = None):
         self.size = size
@@ -164,7 +182,7 @@ class Generation:
 
     def next_generation(self, world):
         for creature in self.creatures:
-            creature.live(world, 15)
+            creature.live(15)
         # Sort creatures by fitness
         self.creatures.sort(key = lambda c: c.food)
         # breed
@@ -182,7 +200,7 @@ class Generation:
             dna_sequence_move_food = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
             dna_sequence_move_general = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
             dna = DNA(dna_sequences = [dna_sequence_sense_food, dna_sequence_move_food, dna_sequence_move_general])
-            self.creatures.append( Creature(dna) )
+            self.creatures.append( Creature(dna, world) )
 
 if __name__ == "__main__":
     world = World(100, 100)
@@ -196,7 +214,3 @@ if __name__ == "__main__":
     for i in range(GENERATION_NUMBER):
         generation = generation.next_generation(world)
         world.random_fill()
-
-
-
-
