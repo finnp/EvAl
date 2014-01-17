@@ -59,6 +59,7 @@ class Creature:
     def __init__(self, dna, position = (0,0)):
         self.dna = dna
         self.position = position
+        self.food = 0
 
         # DNA Usage
         self.food_sense_distance = self.dna.dna_sequences[0].data[0]
@@ -72,6 +73,14 @@ class Creature:
 
     # DNA Usage
     # Seq 0 = Maximum Distance for sensing food
+    # Seq 1 = Food Move Path
+    # Seq 2 = General Move Path
+
+    # The acts done until it dies
+    def live(self, world, moves):
+        for i in range(moves):
+            self.act(world)
+        return self.food
 
     # The creature acts upon the world
     def act(self, world):
@@ -79,6 +88,7 @@ class Creature:
             self._move_food( direction )
         else
             self._move_general()
+        return self
 
     # Returns direction in which the food is to find
     def _sense_food(self, world):
@@ -90,6 +100,7 @@ class Creature:
         for distance in range( self.food_sense_distance )
             for x, y in directions:
                 world.is_food_at(self.position[0] + x, self.position[1] + y):
+                    self.food += 1
                     return (x, y)
         return None
 
@@ -135,24 +146,44 @@ class World:
         except IndexError:
             return None
 
+class Generation:
+    def __init__(self, size):
+        self.size = size
+
+        self.creatures = []
+        self._populate() # Fill self.creatures
+
+    def next_generation(self, world):
+        for creature in self.creatures:
+            creature.live(world)
+        # Sort creatures by fitness
+        creatures.sort(key = lambda: creature.food)
+        # breed
+        children = []
+        for i in range(size):
+            children[i] = creatures[0].breed(creatures[1])
+        return children
+
+    def _populate(self):
+        for i in range(self.size):
+            dna_sequence_sense_food =  DNA_Sequence(data_length = 1, data_value_set = [x for x in range(1,4)])
+            dna_sequence_move_food = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
+            dna_sequence_move_general = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
+            dna = DNA(dna_sequences = [dna_sequence_sense_food, dna_sequence_move_food, dna_sequence_move_general])
+            self.creatures = Creature(dna)      
+
 if __name__ == "__main__":
     world = World(100, 100)
-    generation_size = 25
-    
+    GENERATION_SIZE = 25
+    GENERATION_NUMBER = 25
 
     # Create initial generation
-    generation = []
-    for i in range(generation_size):
-        dna_sequence_sense_food = DNA_Sequence(data_length = 1, data_value_set = [x for x in range(1,4)])
-        dna_sequence_move_food = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
-        dna_sequence_move_general = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
-        dna = DNA(dna_sequences = [dna_sequence_sense_food, dna_sequence_move_food, dna_sequence_move_general])
-        generation[i] = Creature(dna)
-
+    generation = Generation( GENERATION_SIZE )
 
     # Loop through generations
-
-
+    for i in range(GENERATION_NUMBER):
+        generation = generation.next_generation(world)
+    
 
 
 
