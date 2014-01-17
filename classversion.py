@@ -67,6 +67,9 @@ class Creature:
         self.move_food_path = self.dna.dna_sequences[1].data
         self.move_general_path = self.dna.dna_sequences[2].data
 
+    def __str__(self):
+        return "Food: {}, Vision: {}".format(self.food, self.food_sense_distance)
+
     # Breeds the child this and the other creature
     # Return new Creature
     def breed(self, other):
@@ -129,10 +132,13 @@ class World:
         self.width = width
         self.height = height
         self.blocks = []
-        for x in range(width):
-            self.blocks.append([])
-            for y in range(height):
-                self.blocks[x].append( Block( random.random() > 0.9 ) )
+        self.random_fill()
+
+    def random_fill(self):
+      for x in range(self.width):
+        self.blocks.append([])
+        for y in range(self.height):
+            self.blocks[x].append( Block( random.random() > 0.9 ) )      
 
     def is_food_at(self, x, y):
         block = self.get_block(x, y)
@@ -166,13 +172,13 @@ class Generation:
         for i in range(self.size):
             children.append( self.creatures[0].breed( self.creatures[1] ) )
 
-        print(self.creatures[0].food)
+        print(self.creatures[0])
         return Generation(self.size, children)
 
     def _populate(self):
         self.creatures = []
         for i in range(self.size):
-            dna_sequence_sense_food =  DNA_Sequence(data_length = 1, data_value_set = [x for x in range(1,4)])
+            dna_sequence_sense_food =  DNA_Sequence(data_length = 1, data_value_set = [x for x in range(1,10)])
             dna_sequence_move_food = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
             dna_sequence_move_general = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
             dna = DNA(dna_sequences = [dna_sequence_sense_food, dna_sequence_move_food, dna_sequence_move_general])
@@ -181,7 +187,7 @@ class Generation:
 if __name__ == "__main__":
     world = World(100, 100)
     GENERATION_SIZE = 25
-    GENERATION_NUMBER = 25
+    GENERATION_NUMBER = 2500
 
     # Create initial generation
     generation = Generation( GENERATION_SIZE )
@@ -189,6 +195,7 @@ if __name__ == "__main__":
     # Loop through generations
     for i in range(GENERATION_NUMBER):
         generation = generation.next_generation(world)
+        world.random_fill()
 
 
 
