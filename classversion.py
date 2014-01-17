@@ -6,7 +6,7 @@
 import random
 
 class DNA_Sequence:
-    def __init__(self, data_length = 1, data_value_set = []):
+    def __init__(self, data_length = 1, data_value_set = [], data = []):
         self.data_length = data_length
         self.data_value_set = data_value_set
         self._generate_data() # Fills self.data
@@ -16,21 +16,21 @@ class DNA_Sequence:
     # Return a new DNA sequence
     def combine(self, other):
         # Define a point where to  split the sequences
-        split_point = random.random(0, sequence_length)
+        split_point = random.randrange(0, self.data_length)
         new_data = self.data[:split_point] + other.data[split_point:] 
-        return DNA_Sequence(self.mutate_func, new_data)
+        return DNA_Sequence(self.data_length, self.data_value_set, new_data)
 
     def get_length(self):
         return len(self.data)
 
     def mutate(self):
-        key = random.random(0, len(self.data))
+        key = random.randrange(0, len(self.data))
         self.data[key] = random.choice( self.data_value_set )
         return self
 
     def _generate_data(self):
         self.data = []
-        for i in range(data_length):
+        for i in range(self.data_length):
             self.data.append( random.choice( self.data_value_set ) )
         return self
 
@@ -47,13 +47,14 @@ class DNA:
         crossed_over = []
         for i in range( len(self.dna_sequences) ):
             # Combine fraction of self sequence with fraction of other sequence
-            crossed_over[i] = self.dna_sequences[i].combine(other.dna_sequences[i])
+            crossed_over.append( self.dna_sequences[i].combine(other.dna_sequences[i]) )
         return DNA(crossed_over)
 
     # Randomly change parts of the own DNA sequences
     def mutate(self):
         for dna_sequence in self.dna_sequences:
             dna_sequence.mutate()
+        return self
 
 class Creature:
     def __init__(self, dna, position = (0,0)):
@@ -84,9 +85,10 @@ class Creature:
 
     # The creature acts upon the world
     def act(self, world):
-        if( direction = self._sense_food(world) ):
+        direction = self._sense_food(world)
+        if( direction ):
             self._move_food( direction )
-        else
+        else:
             self._move_general()
         return self
 
@@ -97,26 +99,25 @@ class Creature:
         
         directions = [(0,1),(1,0),(-1,0),(0,-1)]
         
-        for distance in range( self.food_sense_distance )
+        for distance in range( self.food_sense_distance ):
             for x, y in directions:
-                world.is_food_at(self.position[0] + x, self.position[1] + y):
+                if world.is_food_at(self.position[0] + x, self.position[1] + y):
                     self.food += 1
                     return (x, y)
         return None
 
     # Move in the direction of specified vector
     def _move(self, vector):
-        self.position[0] += vector[0]
-        self.position[1] += vector[1]
+        self.position = (self.position[0] + vector[0], self.position[1] + vector[1])
         return self
 
     def _move_food(self, direction):
-        self.move(direction)
+        self._move(direction)
         return self
 
     def _move_general(self):
         for step in self.move_general_path:
-            self.move( step )
+            self._move( step )
         return self
 
 class Block:
@@ -125,13 +126,13 @@ class Block:
 
 class World: 
     def __init__(self, width, height):
-        self.blocks = []
         self.width = width
         self.height = height
+        self.blocks = []
         for x in range(width):
-            self.blocks[x] = []
+            self.blocks.append([])
             for y in range(height):
-                self.blocks[x][y] = Block( Math.random() > 0.9 )
+                self.blocks[x].append( Block( random.random() > 0.9 ) )
 
     def is_food_at(self, x, y):
         block = self.get_block(x, y)
@@ -142,35 +143,40 @@ class World:
 
     def get_block(self, x, y):
         try:
-            return self.block[x][y]
+            return self.blocks[x][y]
         except IndexError:
             return None
 
 class Generation:
-    def __init__(self, size):
+    def __init__(self, size, creatures = None):
         self.size = size
 
-        self.creatures = []
-        self._populate() # Fill self.creatures
+        if creatures:
+            self.creatures = creatures
+        else:
+            self._populate() # Fill self.creatures
 
     def next_generation(self, world):
         for creature in self.creatures:
-            creature.live(world)
+            creature.live(world, 15)
         # Sort creatures by fitness
-        creatures.sort(key = lambda: creature.food)
+        self.creatures.sort(key = lambda c: c.food)
         # breed
         children = []
-        for i in range(size):
-            children[i] = creatures[0].breed(creatures[1])
-        return children
+        for i in range(self.size):
+            children.append( self.creatures[0].breed( self.creatures[1] ) )
+
+        print(self.creatures[0].food)
+        return Generation(self.size, children)
 
     def _populate(self):
+        self.creatures = []
         for i in range(self.size):
             dna_sequence_sense_food =  DNA_Sequence(data_length = 1, data_value_set = [x for x in range(1,4)])
             dna_sequence_move_food = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
             dna_sequence_move_general = DNA_Sequence(data_length = 4, data_value_set = [(1,0),(0,1),(-1,0),(0,-1)])
             dna = DNA(dna_sequences = [dna_sequence_sense_food, dna_sequence_move_food, dna_sequence_move_general])
-            self.creatures = Creature(dna)      
+            self.creatures.append( Creature(dna) )
 
 if __name__ == "__main__":
     world = World(100, 100)
@@ -183,7 +189,7 @@ if __name__ == "__main__":
     # Loop through generations
     for i in range(GENERATION_NUMBER):
         generation = generation.next_generation(world)
-    
+
 
 
 
