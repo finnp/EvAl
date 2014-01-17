@@ -1,7 +1,7 @@
 # Lexi und Finn
 #
-# Evolutionärer Algorithmus zur Wegfindung
-#
+# Evolutionärer Algorithmus zum Finden von Futter
+# mit Sensorik
 
 import random
 import copy
